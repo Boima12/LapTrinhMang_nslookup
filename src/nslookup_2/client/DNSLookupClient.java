@@ -13,6 +13,23 @@ public class DNSLookupClient {
     }
 
     public String lookup(String domain) {
-    	return "";
+        StringBuilder sb = new StringBuilder();
+        try (Socket socket = new Socket(serverHost, serverPort);
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+
+            out.println(domain); // gửi domain
+
+            String line;
+            while ((line = in.readLine()) != null) {
+                if ("END".equals(line)) break; // server báo hết
+                sb.append(line).append("\n");
+            }
+
+            return sb.toString();
+
+        } catch (IOException e) {
+            return "Error: " + e.getMessage();
+        }
     }
 }
