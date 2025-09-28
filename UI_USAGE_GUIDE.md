@@ -20,3 +20,19 @@
 ### 5. **History Button** (Mới!)
 - Nhấn `History` để xem danh sách domain đã lookup
 - Hiển thị số lượng và danh sách domain
+
+=== Thread Pool Status ===
+Active Threads: 0          ← Số thread đang hoạt động
+Pool Size: 10              ← Tổng số thread trong pool
+Core Pool Size: 10         ← Số thread cố định (luôn chạy)
+Max Pool Size: 50          ← Số thread tối đa có thể tạo
+Queue Size: 0              ← Số task đang chờ trong queue
+Completed Tasks: 79        ← Tổng số task đã hoàn thành
+=========================
+=== DNS Resolver Statistics ===
+Total queries: 79          ← Tổng số DNS queries
+Cache hits: 64             ← Số lần tìm thấy trong cache
+Cache misses: 15           ← Số lần không tìm thấy trong cache
+Cache hit rate: 81.01%     ← Tỷ lệ cache hit
+Cached entries: 0          ← Số entries đang được cache
+===============================
