@@ -12,8 +12,18 @@ public class DNSLookupUI {
     private JButton clearBT;
     private JButton multiTestBT;
     private JButton showHistoryBT;
+    private JButton connectBT;
     private JTextField inputTF;
+    private JTextField serverIPTF;
+    private JTextField serverPortTF;
+    private JTextField clientNameTF;
     private JTextArea consoleTA;
+
+    // Persistent connection state
+    private java.net.Socket persistentSocket;
+    private java.io.PrintWriter persistentOut;
+    private java.io.BufferedReader persistentIn;
+    private boolean isConnected = false;
 
     // Lưu trữ danh sách domain đã lookup
     private java.util.List<String> lookupHistory = new java.util.ArrayList<>();
@@ -34,40 +44,70 @@ public class DNSLookupUI {
     }
 
     private void initialize() {
-        frame = new JFrame("DNS Lookup Client");
-        frame.setBounds(100, 100, 600, 400);
+        frame = new JFrame("DNS Lookup Client - Multi-Machine");
+        frame.setBounds(100, 100, 700, 500);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.getContentPane().setLayout(null);
 
+        // Server connection settings
+        JLabel serverLbl = new JLabel("Server IP:");
+        serverLbl.setBounds(30, 20, 80, 20);
+        frame.getContentPane().add(serverLbl);
+
+        serverIPTF = new JTextField("192.168.1.100");
+        serverIPTF.setBounds(120, 20, 120, 25);
+        frame.getContentPane().add(serverIPTF);
+
+        JLabel portLbl = new JLabel("Port:");
+        portLbl.setBounds(250, 20, 40, 20);
+        frame.getContentPane().add(portLbl);
+
+        serverPortTF = new JTextField("5050");
+        serverPortTF.setBounds(290, 20, 60, 25);
+        frame.getContentPane().add(serverPortTF);
+
+        JLabel nameLbl = new JLabel("Client Name:");
+        nameLbl.setBounds(360, 20, 90, 20);
+        frame.getContentPane().add(nameLbl);
+
+        clientNameTF = new JTextField("Client-1");
+        clientNameTF.setBounds(450, 20, 120, 25);
+        frame.getContentPane().add(clientNameTF);
+
+        connectBT = new JButton("Connect");
+        connectBT.setBounds(580, 20, 90, 25);
+        frame.getContentPane().add(connectBT);
+
+        // Domain input
         JLabel lbl = new JLabel("Domain:");
-        lbl.setBounds(30, 30, 60, 20);
+        lbl.setBounds(30, 60, 60, 20);
         frame.getContentPane().add(lbl);
 
         inputTF = new JTextField();
-        inputTF.setBounds(100, 30, 200, 25);
+        inputTF.setBounds(100, 60, 200, 25);
         frame.getContentPane().add(inputTF);
 
         lookupBT = new JButton("Lookup");
-        lookupBT.setBounds(320, 30, 80, 25);
+        lookupBT.setBounds(320, 60, 80, 25);
         frame.getContentPane().add(lookupBT);
 
         clearBT = new JButton("Clear");
-        clearBT.setBounds(410, 30, 70, 25);
+        clearBT.setBounds(410, 60, 70, 25);
         frame.getContentPane().add(clearBT);
 
         multiTestBT = new JButton("Multi Test");
-        multiTestBT.setBounds(490, 30, 90, 25);
+        multiTestBT.setBounds(490, 60, 90, 25);
         frame.getContentPane().add(multiTestBT);
 
         showHistoryBT = new JButton("History");
-        showHistoryBT.setBounds(590, 30, 80, 25);
+        showHistoryBT.setBounds(590, 60, 80, 25);
         frame.getContentPane().add(showHistoryBT);
 
         consoleTA = new JTextArea();
         consoleTA.setEditable(false);
         consoleTA.setLineWrap(true);
         JScrollPane scrollPane = new JScrollPane(consoleTA);
-        scrollPane.setBounds(30, 80, 640, 250);
+        scrollPane.setBounds(30, 100, 640, 350);
         frame.getContentPane().add(scrollPane);
 
         // Add action listeners
@@ -75,6 +115,7 @@ public class DNSLookupUI {
         clearBT.addActionListener(new MyActionListener());
         multiTestBT.addActionListener(new MyActionListener());
         showHistoryBT.addActionListener(new MyActionListener());
+        connectBT.addActionListener(new MyActionListener());
     }
 
     private class MyActionListener implements ActionListener {
@@ -89,7 +130,7 @@ public class DNSLookupUI {
                     if (domains.length == 1) {
                         // Chỉ có 1 domain
                         consoleTA.append("Querying: " + input + "\n");
-                        String response = DNSLookupClient_request(input);
+                        String response = doLookup(input);
                         consoleTA.append(response + "\n");
 
                         // Lưu vào history
@@ -106,7 +147,7 @@ public class DNSLookupUI {
                             String domain = domains[i].trim();
                             if (!domain.isEmpty()) {
                                 consoleTA.append("[" + (i + 1) + "/" + domains.length + "] Querying: " + domain + "\n");
-                                String response = DNSLookupClient_request(domain);
+                                String response = doLookup(domain);
                                 consoleTA.append(response + "\n");
                                 consoleTA.append("--------------------------------\n\n");
 
@@ -126,6 +167,12 @@ public class DNSLookupUI {
                 runMultiTest();
             } else if (evt.getSource() == showHistoryBT) {
                 showHistory();
+            } else if (evt.getSource() == connectBT) {
+                if (!isConnected) {
+                    performConnect();
+                } else {
+                    performDisconnect();
+                }
             }
         }
     }
@@ -158,7 +205,7 @@ public class DNSLookupUI {
 
             try {
                 long start = System.currentTimeMillis();
-                String result = DNSLookupClient_request(domain);
+                String result = doLookup(domain);
                 long end = System.currentTimeMillis();
 
                 if (result != null && !result.contains("Error")) {
@@ -202,8 +249,80 @@ public class DNSLookupUI {
         consoleTA.append("=====================\n\n");
     }
 
-    private String DNSLookupClient_request(String host) {
-        DNSLookupClient client = new DNSLookupClient("127.0.0.1", 5050);
-        return client.lookup(host);
+    private void performConnect() {
+        String serverIP = serverIPTF.getText().trim();
+        String serverPort = serverPortTF.getText().trim();
+        String clientName = clientNameTF.getText().trim();
+        try {
+            int port = Integer.parseInt(serverPort);
+            consoleTA.append("Connecting to " + serverIP + ":" + port + "...\n");
+            persistentSocket = new java.net.Socket(serverIP, port);
+            persistentOut = new java.io.PrintWriter(persistentSocket.getOutputStream(), true);
+            persistentIn = new java.io.BufferedReader(new java.io.InputStreamReader(persistentSocket.getInputStream()));
+            // Send HELLO with client name
+            persistentOut.println("HELLO:" + clientName);
+            isConnected = true;
+            connectBT.setText("Disconnect");
+            JOptionPane.showMessageDialog(frame,
+                    "Kết nối thành công tới " + serverIP + ":" + port,
+                    "Kết nối thành công",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception e) {
+            consoleTA.append("Connection error: " + e.getMessage() + "\n");
+            JOptionPane.showMessageDialog(frame,
+                    "Lỗi kết nối: " + e.getMessage(),
+                    "Kết nối thất bại",
+                    JOptionPane.ERROR_MESSAGE);
+            cleanupConnection();
+        }
+        consoleTA.append("--------------------------------\n\n");
+    }
+
+    private void performDisconnect() {
+        try {
+            if (persistentOut != null) {
+                persistentOut.println("QUIT");
+            }
+        } catch (Exception ignored) {}
+        cleanupConnection();
+        JOptionPane.showMessageDialog(frame,
+                "Đã ngắt kết nối",
+                "Disconnected",
+                JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void cleanupConnection() {
+        isConnected = false;
+        connectBT.setText("Connect");
+        try { if (persistentIn != null) persistentIn.close(); } catch (Exception ignored) {}
+        try { if (persistentOut != null) persistentOut.close(); } catch (Exception ignored) {}
+        try { if (persistentSocket != null) persistentSocket.close(); } catch (Exception ignored) {}
+        persistentIn = null;
+        persistentOut = null;
+        persistentSocket = null;
+    }
+
+    private String doLookup(String host) {
+        try {
+            if (isConnected && persistentOut != null && persistentIn != null) {
+                // Use persistent connection
+                persistentOut.println("LOOKUP " + host);
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = persistentIn.readLine()) != null) {
+                    if ("END".equals(line)) break;
+                    sb.append(line).append("\n");
+                }
+                return sb.toString();
+            } else {
+                // Fallback to one-shot
+                String serverIP = serverIPTF.getText().trim();
+                int port = Integer.parseInt(serverPortTF.getText().trim());
+                DNSLookupClient client = new DNSLookupClient(serverIP, port);
+                return client.lookup(host);
+            }
+        } catch (Exception e) {
+            return "Error: " + e.getMessage();
+        }
     }
 }
