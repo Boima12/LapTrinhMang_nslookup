@@ -60,8 +60,10 @@ public class DNSLookupUI {
         public void actionPerformed(ActionEvent evt) {
             if (evt.getSource() == lookupBT) {
                 String host = inputTF.getText().trim();
+                
                 if (!host.isEmpty()) {
                     consoleTA.append("Querying: " + host + "\n");
+                    
                     String response = DNSLookupClient_request(host);
                     consoleTA.append(response + "\n");
                     inputTF.setText("");
@@ -71,6 +73,7 @@ public class DNSLookupUI {
     }
 
     private String DNSLookupClient_request(String host) {
+    	// TODO dynamic proxy server address
         DNSLookupClient client = new DNSLookupClient("127.0.0.1", 5050);
         return client.lookup(host);
     }
