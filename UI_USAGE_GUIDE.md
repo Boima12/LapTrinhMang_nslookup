@@ -36,3 +36,5 @@ Cache misses: 15           ← Số lần không tìm thấy trong cache
 Cache hit rate: 81.01%     ← Tỷ lệ cache hit
 Cached entries: 0          ← Số entries đang được cache
 ===============================
+
+Thêm Xử lí nhiều client 
