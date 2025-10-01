@@ -2,7 +2,13 @@ package nslookup_2.client.ui;
 
 import javax.swing.*;
 import nslookup_2.client.DNSResolverClient;
+import nslookup_2.client.common.HistoryRecord;
+
 import java.awt.Color;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ClientUI extends JFrame {
 	private static final long serialVersionUID = 1L;
@@ -13,6 +19,7 @@ public class ClientUI extends JFrame {
     private String[] serverData;
     private String serverHost;
     private int serverPort;
+    private List<HistoryRecord> queryHistory = new ArrayList<>();
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
@@ -56,6 +63,12 @@ public class ClientUI extends JFrame {
             }
         });
         menuHome.add(menuItemChangeDestination);
+        
+        JMenuItem menuHistory = new JMenuItem("History");
+        menuHistory.addActionListener(e -> {
+            historyDialog();
+        });
+        menuHome.add(menuHistory);
         
         JMenuItem menuExit = new JMenuItem("Exit");
         menuExit.addActionListener(e -> {
@@ -109,11 +122,22 @@ public class ClientUI extends JFrame {
             String response = DNSLookupClient_request(host);
             consoleTA.append(response + "\n");
             inputTF.setText("");
+            
+            // add to history list
+            String time = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+            queryHistory.add(new HistoryRecord(time, host));
         }
     }
 
     private String DNSLookupClient_request(String host) {
         DNSResolverClient client = new DNSResolverClient(serverHost, serverPort);
         return client.lookup(host);
+    }
+    
+    private void historyDialog() {
+        HistoryRecord selected = historyDialog.showHistory(this, queryHistory);
+        if (selected != null) {
+            inputTF.setText(selected.getQuery());  // only put query into inputTF
+        }
     }
 }
