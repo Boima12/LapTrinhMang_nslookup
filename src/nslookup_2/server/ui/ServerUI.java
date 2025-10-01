@@ -5,7 +5,9 @@ import java.awt.EventQueue;
 import javax.swing.*;
 import java.awt.Font;
 import javax.swing.border.TitledBorder;
-import java.awt.Color;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+
 
 public class ServerUI {
 
@@ -85,14 +87,17 @@ public class ServerUI {
 		
 		queryModel = new DefaultListModel<>();
 		queryList = new JList<>(queryModel);
+		queryList.setCellRenderer(new QueryCellRenderer());	// comment this line if you don't want QueryCellRenderer style
 		JScrollPane queryScroll = new JScrollPane(queryList);
 		queryScroll.setBounds(10, 37, 300, 536);
 		server_main.add(queryScroll);
 
 		
 		queryLog = new JTextArea();
-		queryLog.setFont(new Font("Monospaced", Font.PLAIN, 14));
+		queryLog.setFont(new Font("Monospaced", Font.PLAIN, 12));
 		queryLog.setEditable(false);
+		queryLog.setLineWrap(true);
+		queryLog.setWrapStyleWord(true);
 		JScrollPane logScroll = new JScrollPane(queryLog);
 		logScroll.setBounds(320, 37, 436, 536);
 		server_main.add(logScroll);
@@ -124,7 +129,8 @@ public class ServerUI {
 	
 	public void queryLog_add(String taskSummaryInfo) {
 	    SwingUtilities.invokeLater(() -> {
-	        queryLog.append(taskSummaryInfo + "\n\n");
+	        String time = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+	        queryLog.append("[" + time + "] " + taskSummaryInfo + "\n");
 	    });
 	}
 }

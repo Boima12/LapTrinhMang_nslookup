@@ -3,6 +3,7 @@ package nslookup_2.server;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import javax.swing.SwingUtilities;
 
 import com.google.gson.Gson;
 
@@ -20,7 +21,7 @@ public class DNSServer {
         String ipAddress = NetworkUtils.getLocalIPAddress();
         
         // show ServerUI.java UI
-        javax.swing.SwingUtilities.invokeLater(() -> {
+        SwingUtilities.invokeLater(() -> {
         	serverui.setServerInfo(ipAddress, port);
         	serverui.show(); 
         });
@@ -56,9 +57,6 @@ public class DNSServer {
 
                 String jsonResult = DNSResolver.resolve(domain);
                 DNSResult result = new Gson().fromJson(jsonResult, DNSResult.class);
-//                for (String line : result.split("\n")) {
-//                    out.println(line);
-//                }
                 
                 out.println(jsonResult);
                 out.println("END"); // "END" signal

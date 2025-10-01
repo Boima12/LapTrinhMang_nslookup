@@ -6,12 +6,12 @@ import java.net.Socket;
 import com.google.gson.Gson;
 import nslookup_2.shared.DNSResult;
 
-public class DNSLookupClient {
+public class DNSResolverClient {
     private String serverHost;
     private int serverPort;
     private static final Gson gson = new Gson();
 
-    public DNSLookupClient(String serverHost, int serverPort) {
+    public DNSResolverClient(String serverHost, int serverPort) {
         this.serverHost = serverHost;
         this.serverPort = serverPort;
     }
@@ -24,14 +24,6 @@ public class DNSLookupClient {
 		) {
         	// send query domain to server
         	out.println(domain);
-        	
-        	// when get gson whole string from in.readLine(), if gson.success: true, then return the gson.output, other wise return gson.error
-//        	StringBuilder sb = new StringBuilder();
-//            String line;
-//            while ((line = in.readLine()) != null) {
-//                if ("END".equals(line)) break; // "END" signal
-//                sb.append(line);
-//            }
             
         	String DNSResultJson = in.readLine();
         	DNSResult result = gson.fromJson(DNSResultJson.toString(), DNSResult.class);

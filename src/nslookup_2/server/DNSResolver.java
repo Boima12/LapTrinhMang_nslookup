@@ -1,15 +1,15 @@
 package nslookup_2.server;
 
-import javax.naming.directory.Attributes;
-import javax.naming.directory.InitialDirContext;
-import javax.naming.NamingEnumeration;
-import javax.naming.NamingException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Hashtable;
+
+import org.xbill.DNS.Lookup;
+import org.xbill.DNS.Record;
+import org.xbill.DNS.Resolver;
+import org.xbill.DNS.SimpleResolver;
+import org.xbill.DNS.Type;
 
 import com.google.gson.Gson;
-import nslookup_2.server.common.*;
 import nslookup_2.shared.DNSResult;
 
 public class DNSResolver {
@@ -41,33 +41,36 @@ public class DNSResolver {
         	errorMessage = "Could not resolve basic address for " + input;
         }
 
+        // dnsjava resolver instead of JDNI
         try {
-            // setup JNDI DNS context
-            Hashtable<String, String> env = new Hashtable<>();
-            env.put("java.naming.factory.initial", "com.sun.jndi.dns.DnsContextFactory");
-            InitialDirContext iDirC = new InitialDirContext(env);
+            Resolver resolver = new SimpleResolver();
 
-            // query multiple record types
-            String[] recordTypes = {"A", "AAAA", "CNAME", "MX", "NS"};
-            for (String type : recordTypes) {
+            // Record types we want to fetch
+            int[] recordTypes = {Type.A, Type.AAAA, Type.CNAME, Type.MX, Type.NS};
+            for (int type : recordTypes) {
                 try {
-                    Attributes attrs = iDirC.getAttributes("dns:/" + input, new String[]{type});
-                    NamingEnumeration<?> attrEnum = attrs.getAll();
-                    while (attrEnum.hasMore()) {
-                        sb.append(type).append(" : ").append(attrEnum.next()).append("\n");
+                    Lookup lookup = new Lookup(input, type);
+                    lookup.setResolver(resolver);
+                    Record[] records = lookup.run();
+
+                    if (records != null) {
+                        for (Record record : records) {
+                            sb.append(record.toString()).append("\n");
+                        }
                     }
-                } catch (NamingException e) {
-                    // ignore if that record type doesn't exist
+                } catch (Exception e) {
+                    // ignore missing types, continue
                 }
             }
 
         } catch (Exception e) {
-        	errorMessage = "DNS query error: " + e.getMessage();
+            errorMessage = "DNS query error: " + e.getMessage();
         }
 
         if (!success) {
             return gson.toJson(new DNSResult(false, sb.toString(), errorMessage));
         }
+        
         return gson.toJson(new DNSResult(true, sb.toString(), null));
     }
 }
