@@ -8,25 +8,37 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Hashtable;
 
+import com.google.gson.Gson;
+import nslookup_2.server.common.*;
+import nslookup_2.shared.DNSResult;
+
 public class DNSResolver {
 
+	private static final Gson gson = new Gson();
+	
     /**
      * Resolve a domain or IP into multiple DNS records (A, AAAA, CNAME, MX, NS).
      */
     public static String resolve(String input) {
         StringBuilder sb = new StringBuilder();
+        boolean success = false;
+        String errorMessage = null;
 
         if (input == null || input.trim().isEmpty()) {
-            return "Invalid query";
+            return gson.toJson(new DNSResult(false, "", "Invalid query"));
         }
         input = input.trim();
 
         try {
             InetAddress ia = InetAddress.getByName(input);
-            sb.append("Canonical: ").append(ia.getCanonicalHostName())
-              .append("/").append(ia.getHostAddress()).append("\n");
+            sb.append("Canonical: ")
+            	.append(ia.getCanonicalHostName())
+            	.append("/")
+            	.append(ia.getHostAddress())
+            	.append("\n");
+            success = true;
         } catch (UnknownHostException e) {
-            sb.append("Could not resolve basic address for ").append(input).append("\n");
+        	errorMessage = "Could not resolve basic address for " + input;
         }
 
         try {
@@ -37,7 +49,6 @@ public class DNSResolver {
 
             // query multiple record types
             String[] recordTypes = {"A", "AAAA", "CNAME", "MX", "NS"};
-
             for (String type : recordTypes) {
                 try {
                     Attributes attrs = iDirC.getAttributes("dns:/" + input, new String[]{type});
@@ -51,9 +62,12 @@ public class DNSResolver {
             }
 
         } catch (Exception e) {
-            sb.append("DNS query error: ").append(e.getMessage()).append("\n");
+        	errorMessage = "DNS query error: " + e.getMessage();
         }
 
-        return sb.toString().isEmpty() ? "No DNS records found" : sb.toString();
+        if (!success) {
+            return gson.toJson(new DNSResult(false, sb.toString(), errorMessage));
+        }
+        return gson.toJson(new DNSResult(true, sb.toString(), null));
     }
 }

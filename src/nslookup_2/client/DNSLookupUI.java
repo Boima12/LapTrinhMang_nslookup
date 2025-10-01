@@ -74,7 +74,7 @@ public class DNSLookupUI {
 
     private String DNSLookupClient_request(String host) {
     	// TODO dynamic proxy server address
-        DNSLookupClient client = new DNSLookupClient("127.0.0.1", 5050);
+        DNSLookupClient client = new DNSLookupClient("192.168.1.9", 5050);
         return client.lookup(host);
     }
 }

@@ -4,11 +4,30 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class DNSServer {
-    public static void main(String[] args) {
-        int port = 5050;
-        System.out.println("DNS Server running on port " + port);
+import com.google.gson.Gson;
 
+import nslookup_2.server.common.Constants;
+import nslookup_2.server.ui.ServerUI;
+import nslookup_2.server.utils.NetworkUtils;
+import nslookup_2.shared.DNSResult;
+
+public class DNSServer {
+	
+	private static ServerUI serverui = new ServerUI();
+	
+    public static void main(String[] args) {
+    	int port = Constants.SERVER_PORT;
+        String ipAddress = NetworkUtils.getLocalIPAddress();
+        
+        // show ServerUI.java UI
+        javax.swing.SwingUtilities.invokeLater(() -> {
+        	serverui.setServerInfo(ipAddress, port);
+        	serverui.show(); 
+        });
+        
+        System.out.println("DNS Server running on " + ipAddress + ":" + port);
+
+        // Listen for any new query from Client
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             while (true) {
                 Socket clientSocket = serverSocket.accept();
@@ -32,19 +51,35 @@ public class DNSServer {
                  PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
 
                 String domain = in.readLine();
-                System.out.println("Received query: " + domain);
 
-                String result = DNSResolver.resolve(domain);
+                serverui_query_start(domain);
 
-                // gửi nhiều dòng
-                for (String line : result.split("\n")) {
-                    out.println(line);
-                }
-                out.println("END"); // đánh dấu kết thúc
+                String jsonResult = DNSResolver.resolve(domain);
+                DNSResult result = new Gson().fromJson(jsonResult, DNSResult.class);
+//                for (String line : result.split("\n")) {
+//                    out.println(line);
+//                }
+                
+                out.println(jsonResult);
+                out.println("END"); // "END" signal
+                
+                String status = result.isSuccess() ? "SUCCESS" : "FAILED (" + result.getError() + ")";
+                serverui_query_finish(domain, status);
 
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+        
+        private void serverui_query_start(String domain) {
+        	String query_task = socket.getInetAddress() + ": " + domain;
+            serverui.queryList_add(query_task);
+        }
+        
+        private void serverui_query_finish(String domain, String status) {
+        	String query_task = socket.getInetAddress() + ": " + domain;
+        	serverui.queryList_remove(query_task);
+        	serverui.queryLog_add(socket.getInetAddress() + " - " + domain + " - " + status);
         }
     }
 }
