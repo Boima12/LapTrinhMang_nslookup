@@ -3,11 +3,8 @@ package nslookup_2.server;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import org.xbill.DNS.Lookup;
+import org.xbill.DNS.*;
 import org.xbill.DNS.Record;
-import org.xbill.DNS.Resolver;
-import org.xbill.DNS.SimpleResolver;
-import org.xbill.DNS.Type;
 
 import com.google.gson.Gson;
 import nslookup_2.shared.DNSResult;
@@ -53,10 +50,12 @@ public class DNSResolver {
                     lookup.setResolver(resolver);
                     Record[] records = lookup.run();
 
-                    if (records != null) {
+                    if (records != null && records.length > 0) {
+                        sb.append(Type.string(type)).append(" Records:\n");
                         for (Record record : records) {
-                            sb.append(record.toString()).append("\n");
+                            sb.append("  ").append(formatRecord(record)).append("\n");
                         }
+                        sb.append("\n");
                     }
                 } catch (Exception e) {
                     // ignore missing types, continue
@@ -72,5 +71,28 @@ public class DNSResolver {
         }
         
         return gson.toJson(new DNSResult(true, sb.toString(), null));
+    }
+    
+    private static String formatRecord(Record record) {
+        switch (record.getType()) {
+            case Type.A:
+                return "IPv4: " + ((ARecord) record).getAddress().getHostAddress();
+
+            case Type.AAAA:
+                return "IPv6: " + ((AAAARecord) record).getAddress().getHostAddress();
+
+            case Type.CNAME:
+                return "Alias to: " + ((CNAMERecord) record).getTarget();
+
+            case Type.MX:
+                MXRecord mx = (MXRecord) record;
+                return "Preference " + mx.getPriority() + " -> " + mx.getTarget();
+
+            case Type.NS:
+                return "NS: " + ((NSRecord) record).getTarget();
+
+            default:
+                return record.toString(); // fallback for unsupported types
+        }
     }
 }
