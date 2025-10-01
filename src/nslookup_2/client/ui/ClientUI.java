@@ -3,6 +3,7 @@ package nslookup_2.client.ui;
 import javax.swing.*;
 import nslookup_2.client.DNSResolverClient;
 import nslookup_2.client.common.HistoryRecord;
+import nslookup_2.shared.DNSQuery;
 import nslookup_2.shared.NetworkUtils;
 
 import java.awt.Color;
@@ -11,8 +12,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.Gson;
+
 public class ClientUI extends JFrame {
 	private static final long serialVersionUID = 1L;
+	private static final Gson gson = new Gson();
 	private JButton lookupBT;
     private JTextField inputTF;
     private JCheckBox nsCB, mxCB, aaaaCB, aCB;
@@ -140,13 +144,35 @@ public class ClientUI extends JFrame {
             serverInfo.setText("Server destination: " + serverHost + ":" + serverPort);
         }
     }
+    
+    private ArrayList<String> checkRecordTypes() {
+        ArrayList<String> types = new ArrayList<>();
+
+        if (nsCB.isSelected()) {
+            types.add("NS");
+        }
+        if (mxCB.isSelected()) {
+            types.add("MX");
+        }
+        if (aaaaCB.isSelected()) {
+            types.add("AAAA");
+        }
+        if (aCB.isSelected()) {
+            types.add("A");
+        }
+
+        return types;
+    }
 
     private void sendQuery() {
         String host = inputTF.getText().trim();
+        ArrayList<String> recordTypes = checkRecordTypes();
         if (!host.isEmpty()) {
             consoleTA.append("Querying: " + host + "\n");
             
-            String response = DNSLookupClient_request(host);
+            String DNSQueryJson = gson.toJson(new DNSQuery(host, recordTypes));
+            
+            String response = DNSLookupClient_request(DNSQueryJson);
             consoleTA.append(response + "\n");
             inputTF.setText("");
             

@@ -9,6 +9,7 @@ import com.google.gson.Gson;
 
 import nslookup_2.server.common.Constants;
 import nslookup_2.server.ui.ServerUI;
+import nslookup_2.shared.DNSQuery;
 import nslookup_2.shared.DNSResult;
 import nslookup_2.shared.NetworkUtils;
 
@@ -51,11 +52,13 @@ public class DNSServer {
             try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                  PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
 
-                String domain = in.readLine();
+            	String DNSQueryJson = in.readLine();
+            	DNSQuery query = new Gson().fromJson(DNSQueryJson, DNSQuery.class);
+                String domain = query.getDomain();
 
                 serverui_query_start(domain);
 
-                String jsonResult = DNSResolver.resolve(domain);
+                String jsonResult = DNSResolver.resolve(domain, query.getRecordTypes());
                 DNSResult result = new Gson().fromJson(jsonResult, DNSResult.class);
                 
                 out.println(jsonResult);

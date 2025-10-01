@@ -2,6 +2,7 @@ package nslookup_2.server;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 
 import org.xbill.DNS.*;
 import org.xbill.DNS.Record;
@@ -16,7 +17,7 @@ public class DNSResolver {
     /**
      * Resolve a domain or IP into multiple DNS records (A, AAAA, CNAME, MX, NS).
      */
-    public static String resolve(String input) {
+    public static String resolve(String input, ArrayList<String> inputRecordTypes) {
         StringBuilder sb = new StringBuilder();
         boolean success = false;
         String errorMessage = null;
@@ -38,13 +39,32 @@ public class DNSResolver {
         	errorMessage = "Could not resolve basic address for " + input;
         }
 
-        // dnsjava resolver instead of JDNI
+     // dnsjava resolver
         try {
             Resolver resolver = new SimpleResolver();
 
-            // Record types we want to fetch
-            int[] recordTypes = {Type.A, Type.AAAA, Type.CNAME, Type.MX, Type.NS};
-            for (int type : recordTypes) {
+            for (String typeStr : inputRecordTypes) {
+                int type;
+                switch (typeStr.toUpperCase()) {
+                    case "A":
+                        type = Type.A;
+                        break;
+                    case "AAAA":
+                        type = Type.AAAA;
+                        break;
+                    case "CNAME":
+                        type = Type.CNAME;
+                        break;
+                    case "MX":
+                        type = Type.MX;
+                        break;
+                    case "NS":
+                        type = Type.NS;
+                        break;
+                    default:
+                        continue; // skip unsupported types
+                }
+
                 try {
                     Lookup lookup = new Lookup(input, type);
                     lookup.setResolver(resolver);
@@ -58,13 +78,14 @@ public class DNSResolver {
                         sb.append("\n");
                     }
                 } catch (Exception e) {
-                    // ignore missing types, continue
+                    // ignore errors for this type, continue with next
                 }
             }
 
         } catch (Exception e) {
             errorMessage = "DNS query error: " + e.getMessage();
         }
+
 
         if (!success) {
             return gson.toJson(new DNSResult(false, sb.toString(), errorMessage));
