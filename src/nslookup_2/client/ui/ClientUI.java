@@ -14,6 +14,7 @@ public class ClientUI extends JFrame {
 	private static final long serialVersionUID = 1L;
 	private JButton lookupBT;
     private JTextField inputTF;
+    private JCheckBox nsCB, mxCB, aaaaCB, aCB;
     private JTextArea consoleTA;
     private JLabel serverInfo;
     private String[] serverData;
@@ -69,7 +70,13 @@ public class ClientUI extends JFrame {
             historyDialog();
         });
         menuHome.add(menuHistory);
-        
+
+        JMenuItem menuClear = new JMenuItem("Clear");
+        menuClear.addActionListener(e -> {
+            clear();
+        });
+        menuHome.add(menuClear);
+
         JMenuItem menuExit = new JMenuItem("Exit");
         menuExit.addActionListener(e -> {
             System.exit(0);
@@ -82,6 +89,7 @@ public class ClientUI extends JFrame {
         lbl.setBounds(30, 45, 60, 20);
         getContentPane().add(lbl);
 
+
         inputTF = new JTextField();
         inputTF.setBounds(100, 45, 340, 25);
         getContentPane().add(inputTF);
@@ -90,11 +98,27 @@ public class ClientUI extends JFrame {
         lookupBT.setBounds(450, 43, 100, 25);
         getContentPane().add(lookupBT);
 
+        nsCB = new JCheckBox("NS Records");
+        nsCB.setBounds(30, 75, 120, 25);
+        getContentPane().add(nsCB);
+
+        mxCB = new JCheckBox("MX Records");
+        mxCB.setBounds(160, 75, 120, 25);
+        getContentPane().add(mxCB);
+
+        aaaaCB = new JCheckBox("AAAA Records");
+        aaaaCB.setBounds(290, 75, 120, 25);
+        getContentPane().add(aaaaCB);
+
+        aCB = new JCheckBox("A Records");
+        aCB.setBounds(420, 75, 120, 25);
+        getContentPane().add(aCB);
+
         consoleTA = new JTextArea();
         consoleTA.setEditable(false);
         consoleTA.setLineWrap(true);
         JScrollPane scrollPane = new JScrollPane(consoleTA);
-        scrollPane.setBounds(30, 80, 520, 250);
+        scrollPane.setBounds(30, 110, 520, 220);
         getContentPane().add(scrollPane);
         
         serverInfo = new JLabel("Server destination: ");
@@ -104,7 +128,7 @@ public class ClientUI extends JFrame {
 
         inputTF.addActionListener(e -> sendQuery());
         lookupBT.addActionListener(e -> sendQuery());
-        
+
         // open setupDialog.java to ask for serverHost and serverPost values.
         serverData = setupDialog.askForServerInfo(this);
         if (serverData != null) {
@@ -139,5 +163,9 @@ public class ClientUI extends JFrame {
         if (selected != null) {
             inputTF.setText(selected.getQuery());  // only put query into inputTF
         }
+    }
+
+    private void clear() {
+        consoleTA.setText("");
     }
 }
