@@ -3,6 +3,7 @@ package nslookup_2.client.ui;
 import javax.swing.*;
 import nslookup_2.client.DNSResolverClient;
 import nslookup_2.client.common.HistoryRecord;
+import nslookup_2.shared.NetworkUtils;
 
 import java.awt.Color;
 import java.time.LocalTime;
@@ -42,10 +43,12 @@ public class ClientUI extends JFrame {
     }
 
     private void initialize() {
-        setTitle("DNS Lookup Client");
         setBounds(100, 100, 600, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         getContentPane().setLayout(null);
+        
+        String ipAddress = NetworkUtils.getLocalIPAddress();
+        setTitle("DNS Lookup Client (" + ipAddress + ")");
         
         // JmenuBar
         JMenuBar menuBar = new JMenuBar();

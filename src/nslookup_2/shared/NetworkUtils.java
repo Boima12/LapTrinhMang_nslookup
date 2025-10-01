@@ -1,4 +1,4 @@
-package nslookup_2.server.utils;
+package nslookup_2.shared;
 
 import java.net.*;
 import java.util.*;

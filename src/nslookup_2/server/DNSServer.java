@@ -9,8 +9,8 @@ import com.google.gson.Gson;
 
 import nslookup_2.server.common.Constants;
 import nslookup_2.server.ui.ServerUI;
-import nslookup_2.server.utils.NetworkUtils;
 import nslookup_2.shared.DNSResult;
+import nslookup_2.shared.NetworkUtils;
 
 public class DNSServer {
 	
